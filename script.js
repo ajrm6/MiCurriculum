@@ -141,21 +141,30 @@ links.forEach(link => {
 });
 
 // Integración Dinámica con GitHub API
-// Obteniendo proyectos públicos del usuario ajrm6
+// Obteniendo proyectos públicos de ambas cuentas
 async function fetchGitHubProjects() {
-    const username = 'ajrm6';
+    const usernames = ['ajrm6', 'anroduni'];
     const portfolioGrid = document.getElementById('github-projects');
     
     try {
-        const response = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=4`);
-        if (!response.ok) throw new Error('Error fetching repos');
+        let allRepos = [];
         
-        const repos = await response.json();
+        // Fetch repositories from both accounts
+        for (const username of usernames) {
+            const response = await fetch(`https://api.github.com/users/${username}/repos?sort=updated&per_page=4`);
+            if (response.ok) {
+                const repos = await response.json();
+                allRepos = allRepos.concat(repos);
+            }
+        }
+        
+        // Sort combined repositories by update date
+        allRepos.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
         
         // Remove static placeholders once dynamic data is loaded
-        // (Optional: you can keep them if you want, here we append the dynamic ones)
+        portfolioGrid.innerHTML = '';
         
-        repos.forEach(repo => {
+        allRepos.forEach(repo => {
             if (!repo.fork) { // Omitir forks si lo deseas
                 const card = document.createElement('div');
                 card.className = 'project-card glass-card';
@@ -165,7 +174,7 @@ async function fetchGitHubProjects() {
                 if(repo.language === 'Python') iconClass = 'fa-python fab';
                 if(repo.language === 'JavaScript' || repo.language === 'TypeScript') iconClass = 'fa-js fab';
                 if(repo.language === 'Java') iconClass = 'fa-java fab';
-                if(repo.language === 'HTML') iconClass = 'fa-html5 fab';
+                if(repo.language === 'HTML' || repo.language === 'CSS') iconClass = 'fa-html5 fab';
 
                 card.innerHTML = `
                     <div class="project-img"><i class="${iconClass}"></i></div>
@@ -175,6 +184,7 @@ async function fetchGitHubProjects() {
                         <div style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--primary);">
                             <i class="fas fa-circle"></i> ${repo.language || 'Code'}
                             <i class="fas fa-star" style="margin-left: 10px;"></i> ${repo.stargazers_count}
+                            <i class="fas fa-user" style="margin-left: 10px;"></i> ${repo.owner.login}
                         </div>
                         <a href="${repo.html_url}" target="_blank" class="btn btn-small">Ver en GitHub <i class="fab fa-github"></i></a>
                     </div>
